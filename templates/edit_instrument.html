@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}編輯儀器{% endblock %}
+
+{% block content %}
+    <div class="form-container">
+        <h1>編輯儀器</h1>
+        <p class="text-muted">儀器代碼: {{ instrument.instrument_code }}</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+        <form method="POST" action="" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                <label for="{{ form.instrument_code.id }}">儀器代碼</label>
+                {{ form.instrument_code(class="form-control") }}
+                {% for error in form.instrument_code.errors %}
+                    <span class="error-message">[{{ error }}]</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.chinese_name.id }}">儀器中文名稱</label>
+                {{ form.chinese_name(class="form-control") }}
+                {% for error in form.chinese_name.errors %}
+                    <span class="error-message">[{{ error }}]</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.english_name.id }}">儀器英文名稱</label>
+                {{ form.english_name(class="form-control") }}
+                {% for error in form.english_name.errors %}
+                    <span class="error-message">[{{ error }}]</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id }}">儀器簡介 (用途、規格)</label>
+                {{ form.description(class="form-control", rows=4) }}
+                {% for error in form.description.errors %}
+                    <span class="error-message">[{{ error }}]</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.image_file.label(class="form-label") }}
+                {{ form.image_file(class="form-control-file") }}
+                {% for error in form.image_file.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <br>
+            <div class="form-group">
+                <button type="submit" class="btn-submit">編輯儀器</button>
+            </div>
+        </form>
+
+        <p><a href="{{ url_for('index') }}">返回首頁</a></p>
+    </div>
+
+    <style>
+        /* 容器樣式 */
+        .form-container {
+            max-width: 600px; /* 限制表單最大寬度 */
+            margin: 0 auto; /* 置中 */
+            padding: 20px;
+        }
+        
+        /* 每個表單群組獨佔一行並增加間距 */
+        .form-group { 
+            margin-bottom: 20px; 
+            display: block; /* 確保它是塊級元素 */
+        }
+
+        /* 標籤樣式 */
+        .form-group label, .form-label { 
+            display: block; 
+            margin-top: 15px; 
+            margin-bottom: 5px;
+            font-weight: bold; 
+            font-size: 16px; 
+        }
+
+        /* 輸入框和文字區域樣式 */
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+        }
+        
+        /* 檔案輸入框樣式 */
+        .form-control-file {
+            display: block;
+            margin-top: 5px;
+        }
+
+        /* 錯誤訊息樣式 */
+        .error-message, .text-danger {
+            color: red;
+            display: block; /* 確保錯誤訊息換行 */
+            margin-top: 5px;
+        }
+
+        /* 提交按鈕樣式 */
+        .btn-submit {
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #f4f4f4;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+
+{% endblock content %}

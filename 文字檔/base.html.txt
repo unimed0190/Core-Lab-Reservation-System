@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>儀器預約系統</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        /* 基礎快閃訊息樣式 */
+        .flash { padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
+        
+        /* 新增一些樣式讓標題可點擊時看起來更好 */
+        header h1 a {
+            text-decoration: none; /* 移除下劃線 */
+            color: inherit;         /* 繼承標題顏色 */
+        }
+        nav a { margin: 0 5px; } /* 讓導航連結間隔更清晰 */
+    </style>
+</head>
+<body>
+<header>
+        <h1><a href="{{ url_for('index') }}">儀器與專案服務預約系統 首頁</a></h1>
+    
+    <nav>
+{% if current_user.is_authenticated %}
+                <p>
+            歡迎您，{{ current_user.full_name }}！
+            
+            | <a href="{{ url_for('instruments') }}">儀器列表</a>
+            | <a href="{{ url_for('service') }}">專案服務</a>
+            | <a href="{{ url_for('my_reservations') }}">我的預約</a>
+
+            {% if current_user.role in ['admin', 'super_admin'] %}
+            | <a href="{{ url_for('admin_reservations') }}">審核預約</a>
+            | <a href="{{ url_for('admin_researchers') }}">使用者清單</a>
+            | <a href="{{ url_for('admin_admins') }}">管理員清單</a>
+            | <a href="{{ url_for('add_instrument') }}">新增儀器</a>
+            {% endif %}
+            
+            | <a href="{{ url_for('logout') }}">登出</a>
+        </p>
+    {% else %}
+                <p>
+            | <a href="{{ url_for('login') }}">登入</a>
+            | <a href="{{ url_for('register') }}">註冊</a>
+        </p>
+    {% endif %}
+    </nav>
+</header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <main>
+        {% block content %}
+        <p>歡迎來到儀器預約系統。請從上方選單進行操作。</p>
+        {% endblock %}
+    </main>
+</body>
+</html>

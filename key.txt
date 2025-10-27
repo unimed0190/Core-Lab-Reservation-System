@@ -1,0 +1,3 @@
+
+ADMIN_SECRET_KEY = "YourUltraSecretAdminKey1234567890"
+SUPER_ADMIN_KEY = "UltraMegaSuperSecretKey_22022703" 

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ instrument.chinese_name }} - 預約詳情{% endblock %}
+
+{% block content %}
+    
+    <style>
+        /* 樣式調整，以融入 base.html 佈局 */
+        .details { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        .details h1 { color: #007bff; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        /* 調整輸入框寬度，讓日曆控件有足夠空間 */
+        .form-group input, .form-group textarea { 
+            width: 350px; 
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+        }
+        .details img { max-width: 400px; height: auto; display: block; margin-top: 10px; }
+        
+        /* 表格樣式優化 */
+        .confirmed-table { width: 60%; border-collapse: collapse; margin-top: 15px; }
+        .confirmed-table th, .confirmed-table td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        .confirmed-table thead tr { background-color: #f4f4f4; }
+    </style>
+
+    <div class="details">
+        <h1>{{ instrument.chinese_name }} ({{ instrument.english_name }})</h1>
+        <p class="text-muted">儀器代碼: {{ instrument.instrument_code }}</p>
+
+        {% if current_user.is_authenticated and current_user.role in ['admin', 'super_admin'] %}
+            <div style="margin-bottom: 15px;">
+                <a href="{{ url_for('edit_instrument', instrument_id=instrument.id) }}" 
+                   class="btn btn-warning btn-sm" style="margin-right: 10px;">編輯儀器</a>
+
+                <form method="POST" action="{{ url_for('delete_instrument', instrument_id=instrument.id) }}" 
+                      style="display: inline;" 
+                      onsubmit="return confirm('確定要刪除儀器 {{ instrument.chinese_name }} 嗎？此操作無法撤銷！');">
+                    <button type="submit" class="btn btn-danger btn-sm">刪除儀器</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <p><strong>簡介：</strong> {{ instrument.description }}</p>
+        {% if instrument.image_url %}
+            <p><img src="{{ url_for('static', filename='instrument_images/' + instrument.image_url) }}" alt="{{ instrument.chinese_name }}"></p>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}" style="color: #004085; background-color: #cce5ff; border: 1px solid #b8daff; padding: 10px; margin-bottom: 10px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h2>預約此儀器</h2>
+    
+    <form method="POST">
+        {{ form.hidden_tag() }} 
+        
+        <input type="hidden" name="item_id" value="{{ instrument.id }}">
+        <input type="hidden" name="item_type" value="instrument">
+        
+        <div class="form-group">
+            {{ form.start_time.label }}
+            {{ form.start_time(placeholder='YYYY-MM-DD HH:MM:SS') }} 
+            {% for error in form.start_time.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+        	{{ form.end_time.label }}
+        	{{ form.end_time(placeholder='YYYY-MM-DD HH:MM:SS') }} 
+        	{% for error in form.end_time.errors %}
+            	<span style="color: red;">[{{ error }}]</span>
+        	{% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.purpose.label }}
+            {{ form.purpose(rows=5, cols=40) }}
+            {% for error in form.purpose.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.submit() }}
+        </div>
+    </form>
+    
+    <p><a href="{{ url_for('instruments') }}">返回儀器列表</a></p>
+    
+    <h3>已確認預約時段</h3>
+{% if confirmed_reservations %}
+    <table class="confirmed-table">
+        <thead>
+            <tr>
+                <th>開始時間</th>
+                <th>結束時間</th>
+                <th>預約者狀態</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for res in confirmed_reservations %}
+            <tr>
+                <td>{{ res.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ res.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>已確認</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>目前沒有已確認的預約時段，您可以隨時預約！</p>
+{% endif %}
+
+{% endblock content %}

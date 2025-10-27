@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}管理管理員{% endblock %}
+
+{% block content %}
+    <h2>管理管理員清單</h2>
+    
+    <style>
+        /* (樣式請保持與其他 Admin 頁面一致) */
+        /* 注意：移除 body 樣式，因為 body 屬於 base.html */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .action-btn { padding: 5px 10px; margin-right: 5px; border: none; cursor: pointer; border-radius: 4px; }
+        .promote { background-color: #28a745; color: white; }
+        .demote { background-color: #dc3545; color: white; }
+        .role-admin { font-weight: bold; color: green; }
+        .role-super_admin { font-weight: bold; color: darkblue; }
+    </style>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}" style="padding: 10px; margin-bottom: 10px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if all_users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th>電子郵件 (Email)</th>
+                    <th>目前角色</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    
+                    <td class="role-{{ user.role }}">
+                        {% if user.role == 'super_admin' %}
+                            <span style="color: blue; font-weight: bold;">總管理員</span>
+                        {% elif user.role == 'admin' %}
+                            <span style="color: green; font-weight: bold;">ADMIN</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if user.id != current_user.id %}
+                            
+                            {% if current_user.role == 'super_admin' %}
+                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="action-btn promote" style="background-color: #007bff; margin-bottom: 5px; display: block;">
+                                    編輯資料
+                                </a>
+                                <hr style="border: 0; margin: 5px 0;"> 
+                            {% endif %}
+                            
+                            {% if current_user.role == 'super_admin' %}
+                                
+                                {% if user.role == 'admin' %}
+                                    <a href="{{ url_for('promote_super_admin', target_user_id=user.id) }}" class="action-btn promote" style="background-color: #ffc107;">
+                                        升級為 Super Admin
+                                    </a>
+                                    <a href="{{ url_for('demote_user', user_id=user.id) }}" class="action-btn demote" style="background-color: #007bff;">
+                                        降級為 User
+                                    </a>
+                                    
+                                {% elif user.role == 'super_admin' %}
+                                    <a href="{{ url_for('demote_user', user_id=user.id) }}" class="action-btn demote" style="background-color: #007bff;">
+                                        降級為 Admin
+                                    </a>
+                                {% endif %}
+                                
+                            {% else %}
+                                <span style="color: grey;">(權限鎖定)</span>
+                            {% endif %}
+
+                            <hr style="border: 0; margin: 5px 0;"> 
+
+                            {% if current_user.role == 'super_admin' %}
+                                <a href="{{ url_for('delete_user', user_id=user.id) }}" 
+                                   class="action-btn demote" 
+                                   onclick="return confirm('確定要永久刪除使用者 {{ user.full_name }} 嗎？');"
+                                   style="background-color: #dc3545;">
+                                    刪除帳號
+                                </a>
+                            {% else %}
+                                <span style="color: grey;">(刪除權限鎖定)</span>
+                            {% endif %}
+
+                        {% else %}
+                            <span style="color: purple; font-weight: bold;">(這是您的帳號)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>目前沒有任何註冊管理員。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('admin_reservations') }}">返回預約審核</a> | <a href="{{ url_for('index') }}">返回首頁</a></p>
+    
+{% endblock %} 

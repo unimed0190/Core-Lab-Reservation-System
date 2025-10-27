@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>管理員儀表板 - 使用者管理</title>
+    <style>
+        /* (樣式請保持與其他 Admin 頁面一致) */
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .action-btn { padding: 5px 10px; margin-right: 5px; border: none; cursor: pointer; border-radius: 4px; }
+        .promote { background-color: #28a745; color: white; }
+        .demote { background-color: #dc3545; color: white; }
+        .role-admin { font-weight: bold; color: blue; }
+    </style>
+</head>
+<body>
+    <h1>管理員儀表板 - 使用者管理</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}" style="padding: 10px; margin-bottom: 10px;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if all_users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th>電子郵件 (Email)</th>
+                    <th>目前角色</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td class="role-{{ user.role }}">{{ user.role.upper() }}</td>
+                    <td>
+                        {% if user.role == 'user' %}
+        <a href="{{ url_for('promote_user', user_id=user.id) }}" class="action-btn promote">設定為 Admin</a>
+        
+    {% elif user.role == 'admin' %}
+        {% if current_user.role == 'super_admin' %}
+            <a href="{{ url_for('promote_super_admin', target_user_id=user.id) }}" class="action-btn promote" style="background-color: #ffc107;">
+                升級為 Super Admin
+            </a>
+        {% else %}
+            <span style="color: grey;">(已是 Admin)</span>
+        {% endif %}
+
+    {% elif user.role == 'super_admin' %}
+        <span style="color: blue; font-weight: bold;">(總管理員)</span>
+    {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>目前沒有任何註冊使用者。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('admin_reservations') }}">返回預約審核</a> | <a href="{{ url_for('index') }}">返回首頁</a></p>
+</body>
+</html>

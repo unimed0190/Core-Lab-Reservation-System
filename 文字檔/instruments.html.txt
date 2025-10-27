@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}可預約儀器列表{% endblock %}
+
+{% block content %}
+    <h1>可預約儀器列表</h1>
+    
+    <style>
+        /* 樣式從原本的 head 移到這裡，保持在 block 內 */
+        .instrument-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .instrument-card h2 { margin-top: 0; color: #007bff; }
+        .instrument-card p { color: #555; }
+        .instrument-card img { max-width: 300px; height: auto; display: block; margin-top: 10px; } /* 確保圖片正確顯示 */
+    </style>
+
+    {% for instrument in instruments %}
+    <div class="instrument-card">
+                <h2>{{ instrument.chinese_name }} ({{ instrument.english_name }})</h2> 
+        
+        <p><strong>簡介：</strong> {{ instrument.description }}</p>
+        
+        {% if instrument.image_url %}
+        <p><img src="{{ instrument.image_url }}" alt="{{ instrument.chinese_name }}"></p>
+        {% endif %}
+        
+        <p>
+            <a href="{{ url_for('instrument_detail', instrument_id=instrument.id) }}">查看詳情與預約</a>
+        </p>
+    </div>
+    {% else %}
+        <p>目前資料庫中沒有可預約的儀器。請等待管理員新增。</p>
+            {% endfor %}
+
+    <p><a href="{{ url_for('index') }}">返回首頁</a></p>
+    {% endblock content %}

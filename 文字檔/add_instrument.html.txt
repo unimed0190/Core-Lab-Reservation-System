@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}新增儀器{% endblock %}
+
+{% block content %}
+    <h1>新增儀器</h1>
+
+    <form method="POST" action="" enctype="multipart/form-data">
+        {{ form.hidden_tag() }} 
+        
+        <label for="{{ form.instrument_code.id }}">儀器代碼</label>
+        {{ form.instrument_code(size=50) }} 
+        {% for error in form.instrument_code.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+        <label for="{{ form.chinese_name.id }}">儀器中文名稱</label>
+        {{ form.chinese_name(size=50) }}
+        {% for error in form.chinese_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+
+        <label for="{{ form.english_name.id }}">儀器英文名稱</label>
+        {{ form.english_name(size=50) }}
+        {% for error in form.english_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+
+        <label for="{{ form.description.id }}">儀器簡介 (用途、規格)</label>
+        {{ form.description(cols=50, rows=4) }}
+        {% for error in form.description.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+
+        <label for="{{ form.image_url.id }}">儀器圖片</label>
+        {{ form.image_file.label(class="form-label") }}
+        {{ form.image_file(class="form-control-file") }} 
+        {% for error in form.image_file.errors %}
+            <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+
+        <br>
+        <button type="submit">新增儀器</button>
+    </form>
+
+    <p><a href="{{ url_for('index') }}">返回首頁</a></p>
+
+    <style>
+        form label { display: block; margin-top: 15px; font-weight: bold; }
+        form input[type="text"], form textarea { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 5px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+        }
+        form button[type="submit"] {
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #f4f4f4; /* 根據圖片顏色調整 */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+
+{% endblock content %}

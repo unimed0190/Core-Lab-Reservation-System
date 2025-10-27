@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>升級為總管理員</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash.success { color: green; background-color: #e6ffe6; }
+        .flash.danger { color: red; background-color: #ffe6e6; }
+    </style>
+</head>
+<body>
+    <h1>升級使用者權限</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h2>確認升級對象：{{ user.full_name }} ({{ user.email }})</h2>
+    <p>
+        此操作將把該使用者的權限設定為 **總管理員 (Super Admin)**。
+        請輸入總管理員密鑰以確認。
+    </p>
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        {{ form.user_id(value=target_user_id) }} <div class="form-group">
+            {{ form.super_key.label }}<br>
+            {{ form.super_key() }}
+            {% for error in form.super_key.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+
+    <p><a href="{{ url_for('admin_users') }}">返回使用者管理頁面</a></p>
+</body>
+</html>

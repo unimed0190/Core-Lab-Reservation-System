@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}我的預約紀錄{% endblock %}
+
+{% block content %}
+    
+    <h2>{{ current_user.full_name }} 的預約記錄</h2>
+
+    <style>
+        /* 移除 body 相關樣式，因為 body 屬於 base.html */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        /* 根據狀態顯示不同顏色 */
+        .status-pending { color: orange; font-weight: bold; }
+        .status-confirmed { color: green; font-weight: bold; }
+        .status-rejected { color: red; font-weight: bold; }
+    </style>
+
+    {% if reservations %}
+        <table>
+            <thead>
+                <tr>
+                    <th>儀器名稱</th>
+                    <th>開始時間</th>
+                    <th>結束時間</th>
+                    <th>預約目的</th>
+                    <th>狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for res in reservations %}
+                <tr>
+                    <td>{{ res.instrument.chinese_name }}</td>
+                    <td>{{ res.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ res.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ res.purpose }}</td>
+                    
+                    <td class="status-{{ res.status }}">
+                        {% if res.status == 'pending' %}
+                            待審核
+                        {% elif res.status == 'confirmed' %}
+                            已確認
+                        {% else %}
+                            已拒絕
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>您目前沒有任何預約記錄。</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('instruments') }}">返回儀器列表</a> | <a href="{{ url_for('index') }}">返回首頁</a></p>
+
+{% endblock content %}

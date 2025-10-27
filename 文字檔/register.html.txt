@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>使用者註冊 - 儀器預約系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .flash { padding: 10px; margin-bottom: 15px; border: 1px solid transparent; border-radius: 4px; }
+        .flash.success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .flash.danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+        .flash.warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+        .error { color: red; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>研究員帳號註冊</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.full_name.label }}<br>
+            {{ form.full_name() }}
+            {% for error in form.full_name.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.email.label }}<br>
+            {{ form.email() }}
+            {% for error in form.email.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.affiliation.label }}<br>
+            {{ form.affiliation() }}
+            {% for error in form.affiliation.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.password.label }}<br>
+            {{ form.password() }}
+            {% for error in form.password.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.password2.label }}<br>
+            {{ form.password2() }}
+            {% for error in form.password2.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.admin_key.label }}<br>
+            {{ form.admin_key(class="form-control") }}
+            {% for error in form.admin_key.errors %}
+                <span class="error">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+
+    <p>已經有帳號了？ <a href="{{ url_for('login') }}">前往登入頁面</a></p>
+</body>
+</html>

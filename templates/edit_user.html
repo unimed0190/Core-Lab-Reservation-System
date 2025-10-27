@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash.success { color: green; background-color: #e6ffe6; }
+        .flash.danger { color: red; background-color: #ffe6e6; }
+        /* 只讀樣式 */
+        .readonly-field { 
+            background-color: #f0f0f0; /* 淺灰色背景 */
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            border-radius: 4px; 
+            display: block; /* 確保佔據整行 */
+            width: 300px;
+        }
+        .input-field { 
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            width: 300px; 
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        .error-message { 
+            color: red; 
+            font-size: 0.9em; 
+            margin-top: 5px; 
+            display: block; 
+        }
+    </style>
+</head>
+<body>
+    <h1>編輯使用者資料 - {{ user.full_name }} ({{ user.role.upper() }})</h1>
+    <p>
+        <span style="font-weight: bold; color: darkred;">
+            (注意: 只有 Super Admin 具有編輯和密碼重設權限)
+        </span>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            <label>電子郵件 (帳號)</label><br>
+            <span class="readonly-field">{{ user.email }}</span>
+            <p style="font-size: 0.8em; color: gray;">帳號是鎖定狀態，無法從此頁面修改。</p>
+        </div>
+
+        <div class="form-group">
+            {{ form.full_name.label }}<br>
+            {{ form.full_name(class="input-field") }}
+            {% for error in form.full_name.errors %}
+                <span class="error-message">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.affiliation.label }} (公司名稱)<br>
+            {{ form.affiliation(class="input-field") }}
+            {% for error in form.affiliation.errors %}
+                <span class="error-message">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+
+        {% if form.phone_number %}
+        <div class="form-group">
+            {{ form.phone_number.label }}<br>
+            {{ form.phone_number(class="input-field") }}
+            {% for error in form.phone_number.errors %}
+                <span class="error-message">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <hr>
+        
+        <h2>密碼重設 (選填)</h2>
+        <div class="form-group">
+            {{ form.new_password.label }}<br>
+            {{ form.new_password(class="input-field") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.confirm_password.label }}<br>
+            {{ form.confirm_password(class="input-field") }}
+            {% for error in form.confirm_password.errors %}
+                <span class="error-message">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+        {{ form.submit(class="btn-primary") }}
+    </div>
+    </form>
+
+        {% if user.role == 'user' %}
+    <p><a href="{{ url_for('admin_researchers') }}">返回使用者清單頁面</a></p>
+{% else %}
+    <p><a href="{{ url_for('admin_admins') }}">返回管理員清單頁面</a></p> 
+{% endif %}
+</body>
+</html>

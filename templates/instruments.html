@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}儀器介紹與列表{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">可預約儀器列表</h1>
+    <p class="lead text-muted mb-4">點擊圖片可查看詳細介紹、預約資訊及可預約時段。</p>
+    
+    {% if current_user.is_authenticated and current_user.role in ['admin', 'super_admin'] %}
+    <div class="mb-4 d-flex justify-content-end">
+        <a href="{{ url_for('add_instrument') }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> 新增儀器
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        
+        {% for instrument in instruments %}
+        
+        <div class="col-lg-4 col-md-6 mb-4">
+            
+            <div class="card h-100 shadow-sm">
+                
+                <a href="{{ url_for('instrument_detail', instrument_id=instrument.id) }}" 
+                   title="點擊查看 {{ instrument.chinese_name }} 詳細介紹" 
+                   style="display: block; overflow: hidden; height: 250px;">
+                    
+                    {% if instrument.image_url %}
+                        <img src="{{ url_for('static', filename='instrument_images/' + instrument.image_url) }}" 
+                             class="card-img-top" 
+                             alt="{{ instrument.chinese_name }}" 
+                             style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease-in-out;"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                    {% else %}
+                        <div class="bg-light text-center d-flex flex-column align-items-center justify-content-center" 
+                             style="width: 100%; height: 250px; border-bottom: 1px solid #eee;">
+                            <i class="fas fa-microscope fa-3x text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">無儀器圖片</p>
+                        </div>
+                    {% endif %}
+                </a>
+
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-truncate mb-1">{{ instrument.chinese_name }}</h5>
+                    
+                    <p class="card-text text-secondary mb-3" style="font-size: 0.9em;">
+                        {% if instrument.description %}
+                            {{ instrument.description|truncate(length=80, killwords=True, end='...') }}
+                        {% else %}
+                            無詳細簡介。
+                        {% endif %}
+                    </p>
+                    
+                    <div class="mt-auto pt-2 border-top">
+                        <small class="text-info d-block mb-2">代碼: {{ instrument.instrument_code }}</small>
+                        <a href="{{ url_for('instrument_detail', instrument_id=instrument.id) }}" class="btn btn-sm btn-primary w-100">
+                            查看詳情 / 預約
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                目前沒有儀器可供預約。
+                {% if current_user.is_authenticated and current_user.role in ['admin', 'super_admin'] %}
+                    <a href="{{ url_for('add_instrument') }}" class="alert-link">點擊這裡新增儀器。</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+{% endblock content %}
+```
+

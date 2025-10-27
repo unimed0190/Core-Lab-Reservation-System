@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}專案服務列表{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">所有專案服務</h1>
+
+    {% if services %}
+        <div class="row">
+            {% for service in services %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ service.chinese_name }}</h5>
+                            <p class="card-text">{{ service.description[:100] or "無詳細描述。" }}...</p>
+                            
+                            <a href="{{ url_for('service_detail', service_id=service.id) }}" class="btn btn-primary">
+                                查看詳情與預約
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            目前沒有可用的專案服務。
+            {% if current_user.is_authenticated and current_user.role in ['admin', 'super_admin'] %}
+                <a href="{{ url_for('add_service') }}" class="alert-link">前往新增服務</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
