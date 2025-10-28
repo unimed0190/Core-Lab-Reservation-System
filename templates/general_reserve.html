@@ -14,56 +14,64 @@
     {% endwith %}
 
     <div class="row">
-        <div class="col-md-6">
-            <label for="item_selector" class="form-label">選擇預約項目：</label>
-            
-            <select id="item_type_selector" class="form-select mb-3" onchange="toggleItemSelect()">
-                <option value="">-- 請選擇預約類別 --</option>
-                <option value="instrument">儀器</option>
-                <option value="service">專案服務</option>
-            </select>
-            
-            <select id="instrument_select" class="form-select mb-3" style="display: none;">
-                <option value="">-- 請選擇儀器 --</option>
-                {% for inst in instruments %}
-                    <option value="{{ inst.id }}" data-type="instrument">
-                        {{ inst.instrument_code }}: {{ inst.chinese_name }} 
-                    </option>
-                {% endfor %}
-            </select>
+    <div class="col-md-6">
+        <label for="item_type_selector" class="form-label">選擇預約類別：</label>
+        
+	<select id="item_type_selector" class="form-select mb-3">
+    	    <option value="" {% if not form.item_type.data %}selected{% endif %}>-- 請選擇預約類別 --</option>
+    
+    	    <option value="instrument" {% if form.item_type.data == 'instrument' %}selected{% endif %}>儀器</option>
+    	    <option value="service" {% if form.item_type.data == 'service' %}selected{% endif %}>專案服務</option>
+</select>
+        
+        <label for="item_detail_selector" class="form-label" id="item_detail_label" style="display: none;">選擇項目：</label>
 
-            <select id="service_select" class="form-select mb-3" style="display: none;">
-                <option value="">-- 請選擇專案服務 --</option>
-                {% for svc in services %}
-                    <option value="{{ svc.id }}" data-type="service">
-                        {{ svc.service_code }}: {{ svc.chinese_name }} 
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+        <select id="instrument_select" name="instrument_id" class="form-select mb-3 item-detail-select" style="display: none;">
+    	    <option value="" selected>-- 請選擇儀器 --</option>
+    	    {% for inst in instruments %}
+       		 <option value="{{ inst.id }}">{{ inst.instrument_code }}: {{ inst.chinese_name }}</option>
+   	     {% endfor %}
+</select>
+
+<select id="service_select" name="service_id" class="form-select mb-3 item-detail-select" style="display: none;">
+    <option value="" selected>-- 請選擇專案服務 --</option>
+    {% for svc in services %}
+        <option value="{{ svc.id }}">{{ svc.service_code }}: {{ svc.chinese_name }}</option>
+    {% endfor %}
+</select>
     </div>
+</div>
     
     <hr>
     
     <form method="POST" id="reservation_form">
         {{ form.hidden_tag() }}
         
-        {{ form.item_id(id='hidden_item_id') }}
-        {{ form.item_type(id='hidden_item_type') }}
+        <input type="hidden" id="force_item_id" name="force_item_id" value="">
+        <input type="hidden" id="force_item_type" name="force_item_type" value="">
+	<div class="form-group">
+            {{ form.start_time.label }}
+            {{ form.start_time(class="form-control", type="datetime-local") }}
+            {% for error in form.start_time.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
 
         <div class="form-group">
-            {{ form.start_time.label }}
-            {{ form.start_time(class="form-control", placeholder='YYYY-MM-DD HH:MM:SS') }}
-        </div>
-        
-        <div class="form-group">
             {{ form.end_time.label }}
-            {{ form.end_time(class="form-control", placeholder='YYYY-MM-DD HH:MM:SS') }}
+            {{ form.end_time(class="form-control", type="datetime-local") }}
+            {% for error in form.end_time.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
         </div>
+
 
         <div class="form-group">
             {{ form.purpose.label }}
             {{ form.purpose(class="form-control", rows=5, cols=40) }}
+            {% for error in form.purpose.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
         </div>
         
         <div class="form-group">
@@ -72,65 +80,88 @@
     </form>
     
     <script>
-        // 獲取所有元素
-        const typeSelector = document.getElementById('item_type_selector');
-        const instrumentSelect = document.getElementById('instrument_select');
-        const serviceSelect = document.getElementById('service_select');
-        const hiddenItemId = document.getElementById('hidden_item_id');
-        const hiddenItemType = document.getElementById('hidden_item_type');
-        const submitButton = document.getElementById('submit_button');
+document.addEventListener('DOMContentLoaded', function() {
+    // 變量定義
+    const typeSelector = document.getElementById('item_type_selector'); 
+    const instrumentSelect = document.getElementById('instrument_select');
+    const serviceSelect = document.getElementById('service_select');
+    const itemDetailLabel = document.getElementById('item_detail_label');
+    const submitButton = document.getElementById('submit_button');
+    
+    // 🚨 新增：強制傳輸的隱藏欄位和表單
+    const reservationForm = document.getElementById('reservation_form'); // 確保您的 <form> 標籤有 id="reservation_form"
+    const forceItemId = document.getElementById('force_item_id');
+    const forceItemType = document.getElementById('force_item_type');
 
-        function updateHiddenFields() {
-            let selectedItem = null;
-            let selectedType = typeSelector.value;
+    // 獲取當前選中的有效項目 ID 和類型
+    function getSelection() {
+        const selectedType = typeSelector.value;
+        let selectedItemId = '';
+
+        if (selectedType === 'instrument') {
+            selectedItemId = instrumentSelect.value;
+        } else if (selectedType === 'service') {
+            selectedItemId = serviceSelect.value;
+        }
+        
+        // 臨時偵錯：檢查選中的實際值
+        console.log("DEBUG_JS: Current Category Selection:", selectedType, selectedItemId);
+
+        return { type: selectedType, id: selectedItemId };
+    }
+
+    function updateSubmitButton() {
+        const selection = getSelection();
+        const canSubmit = selection.type && selection.id; 
+        submitButton.disabled = !canSubmit;
+    }
+
+    function toggleItemSelect() {
+        const selectedType = typeSelector.value;
+
+        instrumentSelect.style.display = 'none';
+        serviceSelect.style.display = 'none';
+        itemDetailLabel.style.display = 'none';
+
+        if (selectedType === 'instrument') {
+            instrumentSelect.style.display = 'block';
+            itemDetailLabel.style.display = 'block';
+        } else if (selectedType === 'service') {
+            serviceSelect.style.display = 'block';
+            itemDetailLabel.style.display = 'block';
+        }
+        
+        updateSubmitButton();
+    }
+    
+    // 🚨 關鍵步驟：在表單提交前，強制將選中的 ID 寫入隱藏欄位
+    if (reservationForm) {
+        reservationForm.addEventListener('submit', function(e) {
+            const selection = getSelection();
             
-            // 根據選中的類型確定數據源
-            if (selectedType === 'instrument') {
-                selectedItem = instrumentSelect;
-            } else if (selectedType === 'service') {
-                selectedItem = serviceSelect;
-            }
-            
-            // 更新隱藏欄位的值
-            if (selectedItem && selectedItem.value) {
-                hiddenItemId.value = selectedItem.value;
-                hiddenItemType.value = selectedType;
-                
-                // 檢查表單是否有錯誤，如果沒有錯誤，且選擇了項目，則啟用按鈕
-                // 這裡簡化為只要選了項目就啟用按鈕
-                submitButton.disabled = false; 
+            if (selection.id && selection.type) {
+                // 強制賦值！
+                forceItemId.value = selection.id; 
+                forceItemType.value = selection.type;
             } else {
-                hiddenItemId.value = '';
-                hiddenItemType.value = '';
-                submitButton.disabled = true; // 禁用按鈕
+                // 如果沒有選擇，阻止提交
+                e.preventDefault(); 
+                alert('請選擇您要預約的儀器或服務。');
             }
-        }
+        });
+    }
 
-        function toggleItemSelect() {
-            const selectedType = typeSelector.value;
+    // 監聽器設置
+    typeSelector.addEventListener('change', toggleItemSelect);
+    typeSelector.addEventListener('input', toggleItemSelect); 
 
-            // 隱藏所有，然後只顯示選中的
-            instrumentSelect.style.display = 'none';
-            serviceSelect.style.display = 'none';
-            
-            if (selectedType === 'instrument') {
-                instrumentSelect.style.display = 'block';
-            } else if (selectedType === 'service') {
-                serviceSelect.style.display = 'block';
-            }
-            
-            // 清空所有選擇，以確保沒有遺留值
-            instrumentSelect.value = '';
-            serviceSelect.value = '';
-            
-            updateHiddenFields();
-        }
+    instrumentSelect.addEventListener('change', updateSubmitButton);
+    serviceSelect.addEventListener('change', updateSubmitButton);
 
-        // 監聽儀器和服務的下拉選單變動
-        instrumentSelect.addEventListener('change', updateHiddenFields);
-        serviceSelect.addEventListener('change', updateHiddenFields);
+    // 初始化頁面狀態
+    toggleItemSelect();
+});
+</script>
 
-        // 初始化
-        toggleItemSelect();
-    </script>
+
 {% endblock content %}
