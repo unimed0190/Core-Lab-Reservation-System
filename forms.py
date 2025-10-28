@@ -115,14 +115,14 @@ class LoginForm(FlaskForm):
 
 class GeneralReservationForm(FlaskForm):
     # 這是通用的預約表單
-    start_time = DateTimeField('開始時間', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
-    end_time = DateTimeField('結束時間', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
-    purpose = TextAreaField('預約目的', validators=[DataRequired(), Length(min=10, max=500)])
+    start_time = DateTimeField('開始時間', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    end_time = DateTimeField('結束時間', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    purpose = TextAreaField('預約目的', validators=[DataRequired(), Length(min=5, max=500)])
     submit = SubmitField('提交預約')
     
     # 用於在統一預約頁面中傳遞選中的項目ID和類型
-    item_id = HiddenField(validators=[DataRequired()]) 
-    item_type = HiddenField(validators=[DataRequired()])
+    item_id = HiddenField()
+    item_type = HiddenField()
 
 # ----------------------------------------------------
 
