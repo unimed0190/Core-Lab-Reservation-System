@@ -57,41 +57,21 @@
     {% endwith %}
 
     <h2>預約此儀器</h2>
-    
-    <form method="POST">
-        {{ form.hidden_tag() }} 
-        
-        <input type="hidden" name="item_id" value="{{ instrument.id }}">
-        <input type="hidden" name="item_type" value="instrument">
-        
-        <div class="form-group">
-            {{ form.start_time.label }}
-            {{ form.start_time(placeholder='YYYY-MM-DD HH:MM:SS') }} 
-            {% for error in form.start_time.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </div>
-        
-        <div class="form-group">
-        	{{ form.end_time.label }}
-        	{{ form.end_time(placeholder='YYYY-MM-DD HH:MM:SS') }} 
-        	{% for error in form.end_time.errors %}
-            	<span style="color: red;">[{{ error }}]</span>
-        	{% endfor %}
-        </div>
+<form method="POST">
+    {{ form.hidden_tag() }} 
 
-        <div class="form-group">
-            {{ form.purpose.label }}
-            {{ form.purpose(rows=5, cols=40) }}
-            {% for error in form.purpose.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
+    {{ form.item_id() }}
+    {{ form.item_type() }}
+
+    <div class="form-group">
+        {{ form.start_time.label }}
+        {{ form.start_time(placeholder='YYYY-MM-DD HH:MM:SS', class="form-control") }} 
         </div>
-        
-        <div class="form-group">
-            {{ form.submit() }}
-        </div>
-    </form>
+    
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
     
     <p><a href="{{ url_for('instruments') }}">返回儀器列表</a></p>
     
