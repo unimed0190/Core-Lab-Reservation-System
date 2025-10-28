@@ -3,12 +3,13 @@
 
 # 導入更多需要的函式，以便處理網頁請求、導向頁面和顯示訊息
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from wtforms import HiddenField, DateTimeField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired, Length
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash 
 from sqlalchemy.orm import validates
 from datetime import datetime, timedelta
 from forms import InstrumentForm, RegistrationForm, LoginForm, GeneralReservationForm, UserEditForm, SuperAdminForm, ServiceForm
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required 
 from functools import wraps
 
 
@@ -501,25 +502,39 @@ def promote_super_admin(target_user_id):
                             user=user_to_promote,
                             target_user_id=target_user_id)
 
-# 儀器詳情與預約路由 (instrument_detail)
 @login_required
 @app.route('/instrument/<int:instrument_id>', methods=['GET', 'POST'])
 def instrument_detail(instrument_id):
-    # ... (您的儀器詳情邏輯) ...
     instrument = Instrument.query.get_or_404(instrument_id)
     form = GeneralReservationForm()
-    current_time = datetime.now() 
+    current_time = datetime.now()
+    
+    # 🌟 關鍵修正：在驗證之前，強制設定 item_id 和 item_type 的值 🌟
+    # 這是確保 DataRequired 驗證通過的關鍵步驟
+    if request.method == 'POST':
+        form.item_id.data = instrument_id
+        form.item_type.data = 'instrument' # 修正：補上結束引號
     
     if form.validate_on_submit():
+        
+        # 由於我們已經在上面設定了 data，這裡可以省略重複賦值，
+        # 讓程式碼更簡潔，但如果保留也可以，只是有點多餘。
+        # form.item_id.data = instrument_id
+        # form.item_type.data = 'instrument' # 再次修正：補上結束引號
+        
+        item_id = form.item_id.data
+        item_type = form.item_type.data
         start_time = form.start_time.data
         end_time = form.end_time.data
         
+        # 1. 時間邏輯檢查
         if start_time >= end_time:
-            flash('預約失敗：開始時間必須早於結束時間。', 'danger')
-            
+            flash('預約失敗：開始時間必須早於結束時間。', 'danger') # 修正：補上結束引號和括號
+
         else:
+            # 2. 衝突檢查邏輯
             conflict_reservations = Reservation.query.filter(
-                Reservation.instrument_id == instrument.id,
+                Reservation.instrument_id == item_id, # 使用 item_id
                 Reservation.status.in_(['confirmed', 'pending']),
                 Reservation.start_time < end_time,
                 Reservation.end_time > start_time
@@ -529,9 +544,10 @@ def instrument_detail(instrument_id):
                 flash('預約失敗：您選擇的時段與現有預約發生衝突！請檢查時間。', 'danger')
                 
             else:
+                # 3. 提交預約物件
                 try:
                     new_reservation = Reservation(
-                        instrument_id=instrument.id,
+                        instrument_id=item_id, # 使用 item_id
                         user_id=current_user.id,
                         start_time=start_time,
                         end_time=end_time,
@@ -550,11 +566,13 @@ def instrument_detail(instrument_id):
                     flash(f'預約提交時發生資料庫錯誤。請聯繫管理員。', 'danger') 
                     print(f"Database Error on instrument reservation: {e}") 
 
+    # GET 請求時設定預設時間
     if request.method == 'GET':
         now_clean = current_time.replace(second=0, microsecond=0)
         form.start_time.data = now_clean
         form.end_time.data = now_clean + timedelta(hours=2)
 
+    # 渲染模板，顯示確認預約
     confirmed_reservations = Reservation.query.filter(
         Reservation.instrument_id == instrument.id,
         Reservation.status == 'confirmed',
@@ -856,6 +874,68 @@ def admin_reservations():
     return render_template('admin_reservations.html', 
                             pending_reservations=pending_reservations)
 
+# 輔助函式：檢查使用者是否為管理員
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 確保 current_user 已經被導入 (from flask_login import current_user)
+        # 這裡檢查 current_user 的 role 屬性
+        if not current_user.is_authenticated or current_user.role not in ['admin', 'super_admin']:
+            flash('您沒有管理員權限訪問該頁面。', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# 輔助函式：檢查使用者是否為總管理員 (可選)
+def super_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'super_admin':
+            flash('您沒有超級管理員權限訪問該頁面。', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- 批准預約路由 ---
+@app.route('/approve_reservation/<int:reservation_id>', methods=['POST'])
+@login_required
+@admin_required 
+def approve_reservation(reservation_id):
+    # 這裡的 Reservation 必須是您在 app.py 中導入的模型
+    reservation = Reservation.query.get_or_404(reservation_id)
+    
+    if reservation.status == 'pending':
+        reservation.status = 'confirmed'
+        # 🌟 您可以在這裡添加檢查，確保批准後沒有新的時間衝突發生
+        # 由於您之前已經成功創建了預約，這裡先簡單處理狀態變更
+        
+        db.session.commit()
+        flash(f'預約 #{reservation_id} 已批准。', 'success')
+    else:
+        flash('只有待處理的預約才能被批准。', 'danger')
+        
+    return redirect(url_for('admin_reservations')) 
+
+
+### 2\. 拒絕預約 (Reject Reservation)
+
+# --- 拒絕預約路由 ---
+@app.route('/reject_reservation/<int:reservation_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_reservation(reservation_id):
+    reservation = Reservation.query.get_or_404(reservation_id)
+    
+    if reservation.status == 'pending':
+        reservation.status = 'rejected'
+        db.session.commit()
+        flash(f'預約 #{reservation_id} 已拒絕。', 'success')
+    else:
+        flash('該預約狀態不允許拒絕。', 'danger')
+        
+    return redirect(url_for('admin_reservations')) 
+
+
 
 # 專案服務詳情及預約路由
 @login_required
@@ -919,58 +999,117 @@ def service_detail(service_id):
                            service=service,
                            confirmed_reservations=confirmed_reservations)
 
-@login_required
+
+# app.py 路由部分 (已修正 NameError, 縮排錯誤, 並加入了提交邏輯)
+
 @app.route('/general_reserve', methods=['GET', 'POST'])
+@login_required
 def general_reserve():
     form = GeneralReservationForm()
-    
-    # 獲取所有儀器和服務，用於前端下拉選單
     instruments = Instrument.query.order_by(Instrument.instrument_code.asc()).all()
     services = Service.query.order_by(Service.service_code.asc()).all()
 
-    return render_template('general_reserve.html', form=form, instruments=instruments, services=services)
-    
+    # 1. 處理 POST 請求 (表單提交)
     if form.validate_on_submit():
-        item_id = form.item_id.data
-        item_type = form.item_type.data
         
-        # ⚠️ 這裡需要您實現預約邏輯
-        try:
-            # 根據 item_type 決定是儀器預約還是服務預約
-            if item_type == 'instrument':
-                # 假設 Reservation 模型是通用的
-                new_reservation = Reservation(
-                    user_id=current_user.id,
-                    instrument_id=item_id, # 寫入儀器ID
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
-                    purpose=form.purpose.data,
-                    status='pending'
-                )
-            elif item_type == 'service':
-                # 如果服務預約使用不同的模型或邏輯，請在這裡區分
-                new_reservation = Reservation(
-                    user_id=current_user.id,
-                    service_id=item_id, # 寫入服務ID (假設 Reservation 模型有 service_id)
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
-                    purpose=form.purpose.data,
-                    status='pending'
-                )
-            else:
-                flash('無效的預約類型。', 'danger')
-                return redirect(url_for('general_reserve'))
+        # 🚨 關鍵修正：優先從強制傳輸欄位獲取值 (最保險的數據源)
+        item_id = request.form.get('force_item_id')
+        item_type = request.form.get('force_item_type')
+    
+        # 如果強制欄位為空 (JS 無效)，則回退到 instrument_id/service_id
+        if not item_id:
+            instrument_id = request.form.get('instrument_id')
+            service_id = request.form.get('service_id')
 
-            db.session.add(new_reservation)
-            db.session.commit()
-            flash('預約已提交，等待管理員審核。', 'success')
-            return redirect(url_for('my_reservations')) 
+            if instrument_id:
+                item_id = instrument_id
+                item_type = 'instrument'
+            elif service_id:
+                item_id = service_id
+                item_type = 'service'
             
-        except Exception as e:
-            db.session.rollback()
-            flash(f'預約失敗：{e}', 'danger')
+        # 🚨 DEBUG: 輸出收到的值 (這是最終的確認！)
+        print(f"DEBUG_POST: item_type={item_type}, item_id={item_id}")
+        # 從 WTForms 獲取時間和其他欄位
+        start_time = form.start_time.data
+        end_time = form.end_time.data
+        
+        # 🌟 額外驗證：確保有選擇項目
+        # item_id 和 item_type 都是 None 時會觸發
+        if not item_id or not item_type:
+            flash('預約失敗：請選擇您要預約的儀器或服務。', 'danger')
+            # 驗證失敗時，讓程式碼繼續到最後的 return render_template
             
-    # GET 請求或驗證失敗時渲染模板
+        # 額外驗證：時間邏輯檢查
+        elif start_time >= end_time:
+            flash('預約失敗：開始時間必須早於結束時間。', 'danger')
+            
+        else:
+            # 嘗試轉換 item_id
+            try:
+                item_id = int(item_id)
+            except (ValueError, TypeError):
+                flash('預約失敗：項目 ID 無效。', 'danger')
+                return render_template('general_reserve.html', form=form, instruments=instruments, services=services)
+
+            # 設置衝突檢查條件
+            conflict_filter = [
+                # ... (您的衝突檢查邏輯不變) ...
+                Reservation.status.in_(['confirmed', 'pending']),
+                Reservation.start_time < end_time,
+                Reservation.end_time > start_time
+            ]
+            
+            # 根據類型添加過濾條件
+            if item_type == 'instrument':
+                conflict_filter.append(Reservation.instrument_id == item_id)
+            elif item_type == 'service':
+                conflict_filter.append(Reservation.service_id == item_id)
+            
+            # 執行時間衝突查詢
+            conflict_reservations = Reservation.query.filter(*conflict_filter).all()
+            
+            if conflict_reservations:
+                flash('預約失敗：您選擇的時段與現有預約發生衝突！請檢查時間。', 'danger')
+            else:
+                # 提交預約物件
+                try:
+                    new_reservation = Reservation(
+                        user_id=current_user.id,
+                        start_time=start_time,
+                        end_time=end_time,
+                        purpose=form.purpose.data,
+                        status='pending'
+                    )
+                    
+                    if item_type == 'instrument':
+                        new_reservation.instrument_id = item_id
+                    elif item_type == 'service':
+                        new_reservation.service_id = item_id
+                        
+                    db.session.add(new_reservation)
+                    db.session.commit()
+                    
+                    flash('預約已提交，等待管理員審核。', 'success')
+                    return redirect(url_for('my_reservations'))
+                    
+                except Exception as e:
+                    db.session.rollback()
+                    error_message = f'預約失敗：資料庫錯誤。詳細：{e}'
+                    flash(error_message, 'danger')
+                    print(f"General Reservation Database Commit Failed: {e}")
+            
+    # 2. 處理 GET 請求或 POST 驗證失敗的情況 (此部分保留在 if 塊外部，以便在任何情況下渲染模板)
+    if request.method == 'GET':
+        current_time = datetime.now()
+        now_clean = current_time.replace(second=0, microsecond=0)
+        
+        if form.start_time.data is None:
+            form.start_time.data = now_clean
+        if form.end_time.data is None:
+            form.end_time.data = now_clean + timedelta(hours=2)
+            
+    # 3. 渲染模板
     return render_template(
         'general_reserve.html',
         form=form,
